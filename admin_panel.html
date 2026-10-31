@@ -46,6 +46,15 @@ tr.done .pass{background:var(--ok);color:#000}
 #rescard{background:var(--panel);border:1px solid var(--line);padding:18px;width:min(640px,94vw);display:none}
 #rescard .n{color:var(--orange);font-weight:800;font-size:22px}
 .empty{color:var(--gray);padding:40px 0;text-align:center;font-size:14px}
+#imp{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:98;padding:16px}
+#imp.show{display:flex}
+.impbox{background:var(--panel);border:1px solid var(--line);padding:22px;width:min(720px,94vw)}
+.imp-title{font-weight:800;letter-spacing:.1em;font-size:15px;margin-bottom:10px}
+.imp-hint{color:var(--gray);font-size:13px;line-height:1.7;margin-bottom:12px}
+#impdata{width:100%;height:180px;background:var(--bg);border:1px solid var(--line);color:#fff;padding:12px;font-family:monospace;font-size:12px;outline:none;resize:vertical}
+#impdata:focus{border-color:var(--orange)}
+.imp-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+#impstat{color:var(--gray);font-size:12px;margin-top:10px;min-height:16px}
 </style>
 </head>
 <body>
@@ -53,7 +62,7 @@ tr.done .pass{background:var(--ok);color:#000}
   <header>
     <div class="logo">Q<span>—</span>РАЗУМ · ВХОД НА «БОЛЬШУЮ НОЧЬ»</div>
     <div class="head-actions" id="hactions" style="display:none">
-      <button class="btn ghost" id="refresh">ОБНОВИТЬ</button>
+      <button class="btn ghost" id="importbtn">ИМПОРТ СПИСКА</button>
       <button class="btn" id="scanbtn">📷 СКАНЕР QR</button>
     </div>
   </header>
@@ -75,6 +84,20 @@ tr.done .pass{background:var(--ok);color:#000}
   </div>
 </div>
 
+<div id="imp">
+  <div class="impbox">
+    <div class="imp-title">ИМПОРТ СПИСКА ГОСТЕЙ</div>
+    <div class="imp-hint">1. Открой Google Форму → вкладка «Ответы».<br>2. Выдели таблицу мышкой (Ctrl+A) и скопируй (Ctrl+C).<br>3. Вставь сюда и нажми «ЗАГРУЗИТЬ». Список сохранится в браузере.</div>
+    <textarea id="impdata" placeholder="Вставь список гостей сюда…"></textarea>
+    <div class="imp-actions">
+      <button class="btn" id="impload">ЗАГРУЗИТЬ</button>
+      <button class="btn ghost" id="impclear">ОЧИСТИТЬ СПИСОК</button>
+      <button class="btn ghost" id="impclose">ЗАКРЫТЬ</button>
+    </div>
+    <div id="impstat"></div>
+  </div>
+</div>
+
 <div id="scan">
   <video id="video" playsinline muted></video>
   <div class="hint">Наведи камеру на QR-код билета гостя</div>
@@ -84,71 +107,101 @@ tr.done .pass{background:var(--ok);color:#000}
 </div>
 
 <script>
-/* НАСТРОЙКА:
-   1) ACCESS_CODE — код входа для сотрудников
-   2) SHEET_CSV_URL — ссылка «Опубликовать в интернете → CSV» таблицы ответов
-   Столбцы таблицы (по порядку): отметка времени, ФИО, учёба, телефон, подписка, ВК, номер */
+/* НАСТРОЙКА: ACCESS_CODE — код входа для сотрудников.
+   Список гостей импортируется вручную: кнопка «ИМПОРТ СПИСКА» →
+   вставка таблицы ответов из Google Формы (вкладка «Ответы»). */
 const ACCESS_CODE = "QNOCH-2674";
-const SHEET_CSV_URL = "ВСТАВЬТЕ_CSV_ССЫЛКУ";
 
 const $ = id => document.getElementById(id);
 const digits = s => (s||'').replace(/\D/g,'').slice(-10);
-let ROWS = [], PASSED = {};
+let ROWS = [], PASSED = {}, WALKINS = 0;
 
 try{ PASSED = JSON.parse(localStorage.getItem('q_passed')||'{}'); }catch(e){ PASSED = {}; }
+try{ ROWS = JSON.parse(localStorage.getItem('q_rows')||'[]'); }catch(e){ ROWS = []; }
+try{ WALKINS = parseInt(localStorage.getItem('q_walkins')||'0',10)||0; }catch(e){ WALKINS = 0; }
 
 $('enter').onclick = ()=>{
   if($('code').value.trim() === ACCESS_CODE){
     $('login').style.display='none'; $('panel').style.display='block'; $('hactions').style.display='flex';
     try{ localStorage.setItem('q_code', ACCESS_CODE); }catch(e){}
-    load();
+    render();
   } else { $('err').textContent = 'Неверный код. Попроси у организаторов.'; }
 };
 $('code').addEventListener('keydown', e=>{ if(e.key==='Enter') $('enter').click(); });
 try{ if(localStorage.getItem('q_code')===ACCESS_CODE) $('enter').click(); }catch(e){}
 
-$('refresh').onclick = load;
-
-async function load(){
-  $('list').innerHTML = '<div class="empty">Загружаем список гостей…</div>';
-  try{
-    const res = await fetch(SHEET_CSV_URL + '&t=' + Date.now());
-    const text = await res.text();
-    const lines = text.split(/\r?\n/).filter(l=>l.trim());
-    ROWS = lines.map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));
-    render();
-  }catch(e){
-    $('list').innerHTML = '<div class="empty">Ошибка загрузки. Проверь ссылку на CSV в настройках файла.</div>';
+$('importbtn').onclick = ()=>{ $('imp').classList.add('show'); $('impstat').textContent=''; };
+$('impclose').onclick = ()=>{ $('imp').classList.remove('show'); render(); };
+$('impclear').onclick = ()=>{
+  ROWS = []; PASSED = {}; WALKINS = 0;
+  try{ localStorage.removeItem('q_rows'); localStorage.removeItem('q_passed'); localStorage.removeItem('q_walkins'); }catch(e){}
+  $('impdata').value=''; $('impstat').textContent = 'Список очищен.'; render();
+};
+$('impload').onclick = ()=>{
+  const parsed = parseImport($('impdata').value);
+  if(!parsed.length){
+    $('impstat').textContent = 'Не нашёл ни одного гостя. Проверь, что скопировал таблицу ответов целиком.';
+    return;
   }
+  ROWS = parsed;
+  try{ localStorage.setItem('q_rows', JSON.stringify(ROWS)); }catch(e){}
+  $('impstat').textContent = 'Загружено гостей: ' + ROWS.length + '. Можно закрыть окно.';
+};
+
+function parseImport(text){
+  const out = [], seen = {};
+  text.replace(/\r/g,'').split('\n').forEach(line=>{
+    if(!line.trim()) return;
+    let cells = line.includes('\t') ? line.split('\t') : line.split(',');
+    cells = cells.map(c=>c.replace(/^"+|"+$/g,'').trim());
+    const joined = cells.join(' ').toLowerCase();
+    const hasPhone = cells.some(c=>{const d=digits(c); return d.length>=10;});
+    if(/отметка времени|timestamp/.test(joined) && !hasPhone) return; /* строка заголовков */
+    let name='', study='', phone='';
+    if(cells.length >= 5){
+      const d = digits(cells[3]);
+      if(d.length>=10){ phone = d; name = cells[1]; study = cells[2]; }
+    }
+    if(!phone){
+      const pc = cells.map(c=>({c, d:digits(c)})).find(x=>x.d.length>=10);
+      if(!pc) return;
+      phone = pc.d;
+      const others = cells.filter(c=>c!==pc.c && c && !/^\d{1,2}\.\d{1,2}\.\d{2,4}/.test(c));
+      name = others[0]||''; study = others[1]||'';
+    }
+    if(!phone) return;
+    phone = phone.slice(-10);
+    if(seen[phone]) return;
+    seen[phone] = 1;
+    out.push({name, study, phone, num: phone.slice(-4).padStart(4,'0')});
+  });
+  return out;
 }
 
 function render(){
   const q = $('search').value.trim().toLowerCase();
-  const body = ROWS.slice(1).map((r,i)=>{
-    const num = String(i+1).padStart(3,'0');
-    const [time,name,study,phone,sub,vk] = r;
-    return {num, name:name||'', study:study||'', phone:phone||'', sub:sub||'', vk:vk||''};
-  }).filter(g => !q || g.name.toLowerCase().includes(q) || digits(g.phone).includes(digits(q)) || g.num.includes(q));
+  const body = ROWS.filter(g => !q || g.name.toLowerCase().includes(q) || g.phone.includes(digits(q)) || g.num.includes(q));
 
-  $('st_total').textContent = ROWS.length - 1;
-  $('st_done').textContent = Object.values(PASSED).filter(Boolean).length;
+  $('st_total').textContent = ROWS.length;
+  $('st_done').textContent = Object.values(PASSED).filter(Boolean).length + WALKINS;
 
+  if(!ROWS.length){ $('list').innerHTML = '<div class="empty">Список пуст. Нажми «ИМПОРТ СПИСКА» и вставь таблицу ответов из формы.</div>'; return; }
   if(!body.length){ $('list').innerHTML = '<div class="empty">Никого не найдено.</div>'; return; }
   $('list').innerHTML = '<table><thead><tr><th>№</th><th>ГОСТЬ</th><th>УЧЁБА</th><th>ТЕЛЕФОН</th><th>ВХОД</th></tr></thead><tbody>' +
     body.map(g=>{
-      const done = !!PASSED[g.num];
-      return `<tr class="${done?'done':''}" data-num="${g.num}">
-        <td class="num">${g.num}</td>
+      const done = !!PASSED[g.phone];
+      return `<tr class="${done?'done':''}" data-num="${g.phone}">
+        <td class="num">№${g.num}</td>
         <td>${esc(g.name)}</td>
         <td style="color:var(--gray)">${esc(g.study)}</td>
-        <td style="color:var(--gray)">${esc(g.phone)}</td>
-        <td><button class="pass" onclick="toggle('${g.num}')">${done?'✓ ПРОШЁЛ':'ОТПУСТИТЬ'}</button></td>
+        <td style="color:var(--gray)">+7 ${g.phone.slice(0,3)} ${g.phone.slice(3,6)}-${g.phone.slice(6,8)}-${g.phone.slice(8)}</td>
+        <td><button class="pass" onclick="toggle('${g.phone}')">${done?'✓ ПРОШЁЛ':'ОТПУСТИТЬ'}</button></td>
       </tr>`;
     }).join('') + '</tbody></table>';
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-window.toggle = num=>{
-  PASSED[num] = !PASSED[num];
+window.toggle = phone=>{
+  PASSED[phone] = !PASSED[phone];
   try{ localStorage.setItem('q_passed', JSON.stringify(PASSED)); }catch(e){}
   render();
 };
@@ -182,28 +235,33 @@ function tick(){
 function onScan(data){
   stopScan();
   const parts = data.split('|');
-  const num = (parts[0]==='QRAZUM' && parts[1]) ? parts[1].padStart(3,'0') : null;
-  const phone = digits(parts[2]||'');
-  let g = num && ROWS.slice(1)[parseInt(num,10)-1];
+  const phone = digits(parts[2]||'').slice(-10);
+  const g = phone ? ROWS.find(r=>r.phone===phone) : null;
   if(g){
-    const i = parseInt(num,10)-1;
-    showCard(String(i+1).padStart(3,'0'), g);
+    showCard(g);
   } else if(phone){
-    const idx = ROWS.slice(1).findIndex(r=>r.some(c=>digits(c)===phone));
-    if(idx>-1) showCard(String(idx+1).padStart(3,'0'), ROWS.slice(1)[idx]);
-    else $('scanres').textContent = 'Гость не найден в списке — проверь телефон.';
+    $('scanres').textContent = 'Гостя нет в импортированном списке.';
+    $('rescard').style.display='block';
+    $('rescard').innerHTML = `<div class="n">НЕТ В СПИСКЕ</div>
+      <div style="font-size:14px;color:var(--gray);margin:6px 0 2px">Телефон: +7 ${phone.slice(0,3)} ${phone.slice(3,6)}-${phone.slice(6,8)}-${phone.slice(8)}</div>
+      <button class="btn" style="margin-top:14px" onclick="skipWalkin()">ПРОПУСТИТЬ БЕЗ СПИСКА</button>`;
   } else {
     $('scanres').textContent = 'QR не распознан. Попробуй ещё раз или найди гостя поиском.';
   }
 }
-function showCard(num, g){
+function showCard(g){
   $('rescard').style.display='block';
-  $('rescard').innerHTML = `<div class="n">№${num}</div>
-    <div style="font-size:18px;font-weight:800;margin:6px 0 2px">${esc(g[1])}</div>
-    <div style="color:var(--gray);font-size:13px">${esc(g[2])} · ${esc(g[3])}</div>
-    <button class="btn" style="margin-top:16px" onclick="markAndClose('${num}')">ПРОПУСТИТЬ ✓</button>`;
+  $('rescard').innerHTML = `<div class="n">№${g.num}</div>
+    <div style="font-size:18px;font-weight:800;margin:6px 0 2px">${esc(g.name)}</div>
+    <div style="color:var(--gray);font-size:13px">${esc(g.study)} · +7 ${g.phone.slice(0,3)} ${g.phone.slice(3,6)}-${g.phone.slice(6,8)}-${g.phone.slice(8)}</div>
+    <button class="btn" style="margin-top:16px" onclick="markAndClose('${g.phone}')">ПРОПУСТИТЬ ✓</button>`;
 }
-window.markAndClose = num=>{ PASSED[num]=true; try{localStorage.setItem('q_passed',JSON.stringify(PASSED));}catch(e){} render(); stopScan(); };
+window.markAndClose = phone=>{ PASSED[phone]=true; try{localStorage.setItem('q_passed',JSON.stringify(PASSED));}catch(e){} render(); stopScan(); };
+window.skipWalkin = ()=>{
+  WALKINS++;
+  try{ localStorage.setItem('q_walkins', String(WALKINS)); }catch(e){}
+  render(); stopScan();
+};
 function stopScan(){
   if(rafId) cancelAnimationFrame(rafId);
   if(stream) stream.getTracks().forEach(t=>t.stop());

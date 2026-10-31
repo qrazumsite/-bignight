@@ -222,7 +222,7 @@
         <div class="fine">Билет появится здесь же — с номером и QR-кодом. Сохрани скриншот.</div>
       </form>
       <div>
-        <p class="lead">Заявка уходит в общий список команды. Мы сверяем тебя с таблицей и выдаём настоящий номер билета — он появится на билете после короткой проверки.</p>
+        <p class="lead">Заявка уходит в общий список команды Q-Разум. Билет с номером и QR-кодом появится сразу — сохрани скриншот и покажи на входе 21 декабря.</p>
       </div>
     </div>
   </div>
@@ -267,9 +267,8 @@
 <script>
 /* ================== НАСТРОЙКИ ================== */
 const CFG = {
-  formAction: "ВСТАВЬТЕ_ССЫЛКУ_С_ПРЕДЗАПОЛНЕНИЕМ", // ссылка из Google Формы (с entry.*)
-  entry: { fio: "entry.XXXXXXX", study: "entry.XXXXXXX", phone: "entry.XXXXXXX", sub: "entry.XXXXXXX", vk: "entry.XXXXXXX" },
-  csvUrl: "ВСТАВЬТЕ_ССЫЛКУ_НА_CSV", // Файл → Поделиться → Опубликовать в интернете → CSV
+  formAction: "https://docs.google.com/forms/d/e/1FAIpQLSdSID2Oh_thrifv3aM1dub7_EWYV1hv5FUTScQ8-iXMH9PboA/viewform",
+  entry: { fio: "entry.1234810636", study: "entry.657384434", phone: "entry.607436125", sub: "entry.1643214674", vk: "entry.2022537058" },
   vk: "https://vk.ru/bignight_qrazym"
 };
 
@@ -281,12 +280,6 @@ const CFG = {
 
 /* helpers */
 const digits = s => (s||'').replace(/\D/g,'').slice(-10);
-async function fetchCsv(){
-  const r = await fetch(CFG.csvUrl, {cache:'no-store'});
-  const t = await r.text();
-  return t.replace(/\r/g,'').split('\n').filter(l=>l.trim()).map(l=>l.split(','));
-}
-
 /* форма */
 const form = document.getElementById('regForm');
 const btn = document.getElementById('submitBtn');
@@ -311,39 +304,20 @@ form.addEventListener('submit', async e=>{
   const base = CFG.formAction.split('/formResponse')[0] + '/formResponse';
   try{ await fetch(base + '?' + params.toString(), {method:'POST', mode:'no-cors'}); }catch(err){}
 
-  /* 2. проверка в таблице: ищем свой телефон и получаем настоящий номер */
+  /* 2. билет выдаётся сразу */
   modal.classList.add('open');
-  tw.innerHTML = '<div class="verify"><div class="spin"></div>Проверяем заявку в списке гостей…<br><b>Это займёт до минуты</b></div>';
-
-  const phone = digits(f.phone.value);
-  const name = f.fio.value.trim();
-  let number = null;
-  for(let i=0;i<12;i++){
-    try{
-      const rows = await fetchCsv();
-      for(let r = rows.length-1; r>=1; r--){
-        const row = rows[r].join(',').toLowerCase();
-        if(row.includes(phone) && row.includes(name.split(' ')[0].toLowerCase())){
-          number = r; /* строка = номер билета (заголовок — строка 1) */
-          break;
-        }
-      }
-      if(number) break;
-    }catch(e){}
-    await new Promise(res=>setTimeout(res,5000));
-  }
-  showTicket(name, f.study.value.trim(), number);
+  showTicket(f.fio.value.trim(), f.study.value.trim(), digits(f.phone.value));
   btn.disabled = false; btn.textContent = 'Получить билет →';
 });
 
-function showTicket(name, study, number){
-  const n = number ? String(number).padStart(3,'0') : '———';
-  const qrPayload = 'QRAZUM|'+(number||'000')+'|'+(document.querySelector('input[name=phone]').value.trim());
+function showTicket(name, study, phone10){
+  const n = (phone10||'0000').slice(-4).padStart(4,'0');
+  const qrPayload = 'QRAZUM|'+n+'|'+(phone10||'0000000000');
   const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(qrPayload);
-  tw.innerHTML = number ? `
+  tw.innerHTML = `
     <div class="ticket">
       <div class="t-head"><div class="brand">Q<span>—</span>РАЗУМ ПРЕДСТАВЛЯЕТ</div><div class="tno">№${n}</div></div>
-      <div class="t-big"><div class="l">Билет подтверждён · в списке</div><div class="n">БОЛЬШАЯ<br>НОЧЬ 2026</div></div>
+      <div class="t-big"><div class="l">Билет подтверждён · до встречи в зале</div><div class="n">БОЛЬШАЯ<br>НОЧЬ 2026</div></div>
       <div class="t-body">
         <div>
           <div class="t-row"><span class="k">Гость</span><b>${name||'—'}</b></div>
@@ -361,14 +335,6 @@ function showTicket(name, study, number){
     <div class="t-actions">
       <a class="btn-outline" href="${CFG.vk}" target="_blank" rel="noopener">Сообщество ВК</a>
       <button class="btn-solid" onclick="document.getElementById('modal').classList.remove('open')">Готово ✕</button>
-    </div>
-  ` : `
-    <div class="err">Заявку отправили, но пока не нашли её в списке.<br><br>
-    Это бывает, если таблица ещё не обновилась или ответ пришёл с другим номером телефона.<br><br>
-    <b>Подожди пару минут и нажми «Проверить снова»</b> — или назови на входе имя и телефон, админы найдут тебя вручную.</div>
-    <div class="t-actions" style="margin-top:18px">
-      <button class="btn-solid" onclick="location.reload()">Проверить снова</button>
-      <button class="btn-outline" onclick="document.getElementById('modal').classList.remove('open')">Закрыть</button>
     </div>
   `;
 }
