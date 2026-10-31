@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-РАЗУМ · Панель входа — БОЛЬШАЯ НОЧЬ</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root{--bg:#0b0b0b;--panel:#141414;--orange:#ff4a1d;--gray:#9a9a9a;--line:#2a2a2a;--ok:#27ae60}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:#fff;font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 18px 80px}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 0 26px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.logo{font-weight:800;letter-spacing:.14em;font-size:14px}
+.logo span{color:var(--orange)}
+.head-actions{display:flex;gap:10px;align-items:center}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--orange);color:#000;border:none;padding:11px 18px;font-weight:800;font-size:12px;letter-spacing:.08em}
+.btn.ghost{background:transparent;color:#fff;border:1px solid #444}
+#stats{display:flex;gap:14px;margin-bottom:18px}
+.stat{background:var(--panel);border:1px solid var(--line);padding:14px 22px;flex:1}
+.stat .v{font-size:30px;font-weight:800;color:var(--orange)}
+.stat .l{color:var(--gray);font-size:11px;letter-spacing:.12em;margin-top:4px}
+#search{width:100%;background:var(--panel);border:1px solid var(--line);color:#fff;padding:14px 16px;font-size:16px;outline:none;margin-bottom:16px}
+#search:focus{border-color:var(--orange)}
+table{width:100%;border-collapse:collapse}
+th{color:var(--gray);font-size:10px;letter-spacing:.16em;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+td{padding:13px 8px;border-bottom:1px solid var(--line);font-size:14px}
+td.num{font-weight:800;color:var(--orange);white-space:nowrap}
+tr.done td{background:#0e2417}
+tr.done .pass{color:#7ddf9a}
+.pass{background:transparent;border:1px solid var(--ok);color:var(--ok);padding:7px 12px;font-weight:800;font-size:11px}
+tr.done .pass{background:var(--ok);color:#000}
+/* LOGIN */
+#login{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+#login h1{font-size:22px;letter-spacing:.1em}
+#code{background:var(--panel);border:1px solid var(--line);color:#fff;padding:15px 18px;font-size:18px;letter-spacing:.2em;text-align:center;outline:none;width:280px}
+#code:focus{border-color:var(--orange)}
+#err{color:var(--orange);font-size:13px;min-height:18px}
+/* SCANNER */
+#scan{position:fixed;inset:0;background:#000d;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:99;padding:16px}
+#scan.show{display:flex}
+#video{width:min(640px,94vw);background:#111;border:1px solid var(--line)}
+#scan .hint{margin:14px 0;color:var(--gray);font-size:13px}
+#scanres{font-size:16px;font-weight:800;margin:12px 0;min-height:24px}
+#rescard{background:var(--panel);border:1px solid var(--line);padding:18px;width:min(640px,94vw);display:none}
+#rescard .n{color:var(--orange);font-weight:800;font-size:22px}
+.empty{color:var(--gray);padding:40px 0;text-align:center;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">Q<span>—</span>РАЗУМ · ВХОД НА «БОЛЬШУЮ НОЧЬ»</div>
+    <div class="head-actions" id="hactions" style="display:none">
+      <button class="btn ghost" id="refresh">ОБНОВИТЬ</button>
+      <button class="btn" id="scanbtn">📷 СКАНЕР QR</button>
+    </div>
+  </header>
+
+  <div id="login">
+    <h1>ПАНЕЛЬ СОТРУДНИКА</h1>
+    <input id="code" placeholder="КОД ДОСТУПА" autocomplete="off">
+    <div id="err"></div>
+    <button class="btn" id="enter">ВОЙТИ →</button>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div id="stats">
+      <div class="stat"><div class="v" id="st_total">0</div><div class="l">ЗАРЕГИСТРИРОВАНО</div></div>
+      <div class="stat"><div class="v" id="st_done">0</div><div class="l">ПРОШЛО НА ВХОДЕ</div></div>
+    </div>
+    <input id="search" placeholder="Поиск: имя, телефон или номер билета…">
+    <div id="list"></div>
+  </div>
+</div>
+
+<div id="scan">
+  <video id="video" playsinline muted></video>
+  <div class="hint">Наведи камеру на QR-код билета гостя</div>
+  <div id="scanres"></div>
+  <div id="rescard"></div>
+  <button class="btn ghost" id="closescan" style="margin-top:16px">ЗАКРЫТЬ СКАНЕР</button>
+</div>
+
+<script>
+/* НАСТРОЙКА:
+   1) ACCESS_CODE — код входа для сотрудников
+   2) SHEET_CSV_URL — ссылка «Опубликовать в интернете → CSV» таблицы ответов
+   Столбцы таблицы (по порядку): отметка времени, ФИО, учёба, телефон, подписка, ВК, номер */
+const ACCESS_CODE = "QNOCH-2674";
+const SHEET_CSV_URL = "ВСТАВЬТЕ_CSV_ССЫЛКУ";
+
+const $ = id => document.getElementById(id);
+const digits = s => (s||'').replace(/\D/g,'').slice(-10);
+let ROWS = [], PASSED = {};
+
+try{ PASSED = JSON.parse(localStorage.getItem('q_passed')||'{}'); }catch(e){ PASSED = {}; }
+
+$('enter').onclick = ()=>{
+  if($('code').value.trim() === ACCESS_CODE){
+    $('login').style.display='none'; $('panel').style.display='block'; $('hactions').style.display='flex';
+    try{ localStorage.setItem('q_code', ACCESS_CODE); }catch(e){}
+    load();
+  } else { $('err').textContent = 'Неверный код. Попроси у организаторов.'; }
+};
+$('code').addEventListener('keydown', e=>{ if(e.key==='Enter') $('enter').click(); });
+try{ if(localStorage.getItem('q_code')===ACCESS_CODE) $('enter').click(); }catch(e){}
+
+$('refresh').onclick = load;
+
+async function load(){
+  $('list').innerHTML = '<div class="empty">Загружаем список гостей…</div>';
+  try{
+    const res = await fetch(SHEET_CSV_URL + '&t=' + Date.now());
+    const text = await res.text();
+    const lines = text.split(/\r?\n/).filter(l=>l.trim());
+    ROWS = lines.map(l=>l.split(',').map(c=>c.replace(/^"|"$/g,'').trim()));
+    render();
+  }catch(e){
+    $('list').innerHTML = '<div class="empty">Ошибка загрузки. Проверь ссылку на CSV в настройках файла.</div>';
+  }
+}
+
+function render(){
+  const q = $('search').value.trim().toLowerCase();
+  const body = ROWS.slice(1).map((r,i)=>{
+    const num = String(i+1).padStart(3,'0');
+    const [time,name,study,phone,sub,vk] = r;
+    return {num, name:name||'', study:study||'', phone:phone||'', sub:sub||'', vk:vk||''};
+  }).filter(g => !q || g.name.toLowerCase().includes(q) || digits(g.phone).includes(digits(q)) || g.num.includes(q));
+
+  $('st_total').textContent = ROWS.length - 1;
+  $('st_done').textContent = Object.values(PASSED).filter(Boolean).length;
+
+  if(!body.length){ $('list').innerHTML = '<div class="empty">Никого не найдено.</div>'; return; }
+  $('list').innerHTML = '<table><thead><tr><th>№</th><th>ГОСТЬ</th><th>УЧЁБА</th><th>ТЕЛЕФОН</th><th>ВХОД</th></tr></thead><tbody>' +
+    body.map(g=>{
+      const done = !!PASSED[g.num];
+      return `<tr class="${done?'done':''}" data-num="${g.num}">
+        <td class="num">${g.num}</td>
+        <td>${esc(g.name)}</td>
+        <td style="color:var(--gray)">${esc(g.study)}</td>
+        <td style="color:var(--gray)">${esc(g.phone)}</td>
+        <td><button class="pass" onclick="toggle('${g.num}')">${done?'✓ ПРОШЁЛ':'ОТПУСТИТЬ'}</button></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+window.toggle = num=>{
+  PASSED[num] = !PASSED[num];
+  try{ localStorage.setItem('q_passed', JSON.stringify(PASSED)); }catch(e){}
+  render();
+};
+$('search').addEventListener('input', render);
+
+/* СКАНЕР QR */
+let stream=null, rafId=null;
+$('scanbtn').onclick = async ()=>{
+  $('scan').classList.add('show');
+  $('scanres').textContent=''; $('rescard').style.display='none';
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    $('video').srcObject = stream; await $('video').play();
+    tick();
+  }catch(e){ $('scanres').textContent = 'Нет доступа к камере. Разреши доступ или используй поиск по списку.'; }
+};
+function tick(){
+  if(!$('scan').classList.contains('show')) return;
+  const v = $('video');
+  if(v.readyState === v.HAVE_ENOUGH_DATA){
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(v,0,0);
+    const img = ctx.getImageData(0,0,c.width,c.height);
+    const code = jsQR(img.data, c.width, c.height, {inversionAttempts:'dontInvert'});
+    if(code && code.data) return onScan(code.data);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+function onScan(data){
+  stopScan();
+  const parts = data.split('|');
+  const num = (parts[0]==='QRAZUM' && parts[1]) ? parts[1].padStart(3,'0') : null;
+  const phone = digits(parts[2]||'');
+  let g = num && ROWS.slice(1)[parseInt(num,10)-1];
+  if(g){
+    const i = parseInt(num,10)-1;
+    showCard(String(i+1).padStart(3,'0'), g);
+  } else if(phone){
+    const idx = ROWS.slice(1).findIndex(r=>r.some(c=>digits(c)===phone));
+    if(idx>-1) showCard(String(idx+1).padStart(3,'0'), ROWS.slice(1)[idx]);
+    else $('scanres').textContent = 'Гость не найден в списке — проверь телефон.';
+  } else {
+    $('scanres').textContent = 'QR не распознан. Попробуй ещё раз или найди гостя поиском.';
+  }
+}
+function showCard(num, g){
+  $('rescard').style.display='block';
+  $('rescard').innerHTML = `<div class="n">№${num}</div>
+    <div style="font-size:18px;font-weight:800;margin:6px 0 2px">${esc(g[1])}</div>
+    <div style="color:var(--gray);font-size:13px">${esc(g[2])} · ${esc(g[3])}</div>
+    <button class="btn" style="margin-top:16px" onclick="markAndClose('${num}')">ПРОПУСТИТЬ ✓</button>`;
+}
+window.markAndClose = num=>{ PASSED[num]=true; try{localStorage.setItem('q_passed',JSON.stringify(PASSED));}catch(e){} render(); stopScan(); };
+function stopScan(){
+  if(rafId) cancelAnimationFrame(rafId);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=null; $('scan').classList.remove('show');
+}
+$('closescan').onclick = stopScan;
+</script>
+</body>
+</html>
