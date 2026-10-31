@@ -3,271 +3,247 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Q-РАЗУМ · Панель входа — БОЛЬШАЯ НОЧЬ</title>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<title>BIGNIGHT — панель сотрудников</title>
 <style>
-:root{--bg:#0b0b0b;--panel:#141414;--orange:#ff4a1d;--gray:#9a9a9a;--line:#2a2a2a;--ok:#27ae60}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:#fff;font-family:Arial,Helvetica,sans-serif}
-.wrap{max-width:960px;margin:0 auto;padding:28px 18px 80px}
-header{display:flex;justify-content:space-between;align-items:center;padding:10px 0 26px;border-bottom:1px solid var(--line);margin-bottom:26px}
-.logo{font-weight:800;letter-spacing:.14em;font-size:14px}
-.logo span{color:var(--orange)}
-.head-actions{display:flex;gap:10px;align-items:center}
-button{font-family:inherit;cursor:pointer}
-.btn{background:var(--orange);color:#000;border:none;padding:11px 18px;font-weight:800;font-size:12px;letter-spacing:.08em}
-.btn.ghost{background:transparent;color:#fff;border:1px solid #444}
-#stats{display:flex;gap:14px;margin-bottom:18px}
-.stat{background:var(--panel);border:1px solid var(--line);padding:14px 22px;flex:1}
-.stat .v{font-size:30px;font-weight:800;color:var(--orange)}
-.stat .l{color:var(--gray);font-size:11px;letter-spacing:.12em;margin-top:4px}
-#search{width:100%;background:var(--panel);border:1px solid var(--line);color:#fff;padding:14px 16px;font-size:16px;outline:none;margin-bottom:16px}
-#search:focus{border-color:var(--orange)}
-table{width:100%;border-collapse:collapse}
-th{color:var(--gray);font-size:10px;letter-spacing:.16em;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
-td{padding:13px 8px;border-bottom:1px solid var(--line);font-size:14px}
-td.num{font-weight:800;color:var(--orange);white-space:nowrap}
-tr.done td{background:#0e2417}
-tr.done .pass{color:#7ddf9a}
-.pass{background:transparent;border:1px solid var(--ok);color:var(--ok);padding:7px 12px;font-weight:800;font-size:11px}
-tr.done .pass{background:var(--ok);color:#000}
-/* LOGIN */
-#login{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-#login h1{font-size:22px;letter-spacing:.1em}
-#code{background:var(--panel);border:1px solid var(--line);color:#fff;padding:15px 18px;font-size:18px;letter-spacing:.2em;text-align:center;outline:none;width:280px}
-#code:focus{border-color:var(--orange)}
-#err{color:var(--orange);font-size:13px;min-height:18px}
-/* SCANNER */
-#scan{position:fixed;inset:0;background:#000d;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:99;padding:16px}
-#scan.show{display:flex}
-#video{width:min(640px,94vw);background:#111;border:1px solid var(--line)}
-#scan .hint{margin:14px 0;color:var(--gray);font-size:13px}
-#scanres{font-size:16px;font-weight:800;margin:12px 0;min-height:24px}
-#rescard{background:var(--panel);border:1px solid var(--line);padding:18px;width:min(640px,94vw);display:none}
-#rescard .n{color:var(--orange);font-weight:800;font-size:22px}
-.empty{color:var(--gray);padding:40px 0;text-align:center;font-size:14px}
-#imp{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;z-index:98;padding:16px}
-#imp.show{display:flex}
-.impbox{background:var(--panel);border:1px solid var(--line);padding:22px;width:min(720px,94vw)}
-.imp-title{font-weight:800;letter-spacing:.1em;font-size:15px;margin-bottom:10px}
-.imp-hint{color:var(--gray);font-size:13px;line-height:1.7;margin-bottom:12px}
-#impdata{width:100%;height:180px;background:var(--bg);border:1px solid var(--line);color:#fff;padding:12px;font-family:monospace;font-size:12px;outline:none;resize:vertical}
-#impdata:focus{border-color:var(--orange)}
-.imp-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-#impstat{color:var(--gray);font-size:12px;margin-top:10px;min-height:16px}
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0a0f; color:#fff; font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; }
+  .wrap { max-width:720px; margin:0 auto; padding:20px 16px 60px; }
+
+  /* LOGIN */
+  #login { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:90vh; text-align:center; }
+  #login h1 { font-size:34px; text-transform:uppercase; letter-spacing:2px; }
+  #login h1 b { color:#ff2d55; }
+  #login p { color:#8f8fa0; font-size:13px; margin:10px 0 26px; }
+  #code { width:240px; padding:14px; background:#15151d; border:1px solid #2a2a36; border-radius:10px; color:#fff; font-size:20px; text-align:center; letter-spacing:4px; outline:none; }
+  #code:focus { border-color:#ff2d55; }
+  .lerr { color:#ff2d55; font-size:13px; margin-top:12px; min-height:18px; }
+
+  /* PANEL */
+  #panel { display:none; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid #1d1d27; margin-bottom:18px; }
+  header .logo { font-weight:800; letter-spacing:2px; text-transform:uppercase; }
+  header .logo b { color:#ff2d55; }
+  .out { background:none; border:1px solid #2a2a36; color:#8f8fa0; padding:8px 14px; border-radius:20px; font-size:12px; cursor:pointer; }
+
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .stat { background:#15151d; border:1px solid #23232e; border-radius:12px; padding:14px; text-align:center; }
+  .stat .v { font-size:26px; font-weight:800; }
+  .stat .k { font-size:10px; color:#8f8fa0; letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+  .stat.ok .v { color:#38e07b; }
+
+  .tools { display:flex; gap:10px; margin-bottom:16px; }
+  #search { flex:1; padding:12px; background:#15151d; border:1px solid #2a2a36; border-radius:10px; color:#fff; outline:none; }
+  #scanbtn { padding:12px 18px; background:#ff2d55; border:none; border-radius:10px; color:#fff; font-weight:700; cursor:pointer; }
+
+  #video-box { display:none; margin-bottom:16px; background:#000; border-radius:14px; overflow:hidden; position:relative; }
+  #video-box video { width:100%; display:block; }
+  #scan-cancel { position:absolute; top:10px; right:10px; background:rgba(0,0,0,.6); border:1px solid #444; color:#fff; padding:6px 12px; border-radius:16px; cursor:pointer; }
+
+  .glist { display:flex; flex-direction:column; gap:8px; }
+  .guest { display:flex; align-items:center; gap:12px; background:#15151d; border:1px solid #23232e; border-radius:12px; padding:12px 14px; }
+  .guest.entered { border-color:#38e07b; opacity:.55; }
+  .guest .num { font-weight:800; color:#ff2d55; min-width:44px; }
+  .guest .who { flex:1; }
+  .guest .who .n { font-weight:600; font-size:15px; }
+  .guest .who .d { color:#8f8fa0; font-size:12px; margin-top:2px; }
+  .go { background:#38e07b; color:#06280f; border:none; padding:9px 14px; border-radius:8px; font-weight:700; cursor:pointer; font-size:12px; }
+  .done { color:#38e07b; font-size:18px; font-weight:800; }
+  .empty { text-align:center; color:#55555f; padding:40px 0; font-size:14px; }
+  .live { display:inline-block; width:8px; height:8px; background:#38e07b; border-radius:50%; margin-right:6px; animation:blink 1.4s infinite; }
+  @keyframes blink { 50% { opacity:.3; } }
+  .scan-msg { text-align:center; font-size:14px; margin-bottom:14px; min-height:20px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="logo">Q<span>—</span>РАЗУМ · ВХОД НА «БОЛЬШУЮ НОЧЬ»</div>
-    <div class="head-actions" id="hactions" style="display:none">
-      <button class="btn ghost" id="importbtn">ИМПОРТ СПИСКА</button>
-      <button class="btn" id="scanbtn">📷 СКАНЕР QR</button>
-    </div>
-  </header>
 
   <div id="login">
-    <h1>ПАНЕЛЬ СОТРУДНИКА</h1>
-    <input id="code" placeholder="КОД ДОСТУПА" autocomplete="off">
-    <div id="err"></div>
-    <button class="btn" id="enter">ВОЙТИ →</button>
+    <h1>Big<b>Night</b></h1>
+    <p>Панель сотрудников. Введите код доступа.</p>
+    <input id="code" type="password" placeholder="••••-••••" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="btn" style="margin-top:16px;background:#ff2d55;color:#fff;border:none;padding:14px 34px;border-radius:30px;font-weight:700;cursor:pointer;" onclick="tryLogin()">Войти</button>
+    <div class="lerr" id="lerr"></div>
   </div>
 
-  <div id="panel" style="display:none">
-    <div id="stats">
-      <div class="stat"><div class="v" id="st_total">0</div><div class="l">ЗАРЕГИСТРИРОВАНО</div></div>
-      <div class="stat"><div class="v" id="st_done">0</div><div class="l">ПРОШЛО НА ВХОДЕ</div></div>
+  <div id="panel">
+    <header>
+      <div class="logo">Big<b>Night</b> • панель</div>
+      <button class="out" onclick="logout()">Выход</button>
+    </header>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="s_reg">0</div><div class="k">Регистраций</div></div>
+      <div class="stat ok"><div class="v" id="s_in">0</div><div class="k">Прошло на входе</div></div>
+      <div class="stat"><div class="v" id="s_left">0</div><div class="k">Свободно</div></div>
     </div>
-    <input id="search" placeholder="Поиск: имя, телефон или номер билета…">
-    <div id="list"></div>
-  </div>
-</div>
 
-<div id="imp">
-  <div class="impbox">
-    <div class="imp-title">ИМПОРТ СПИСКА ГОСТЕЙ</div>
-    <div class="imp-hint">1. Открой Google Форму → вкладка «Ответы».<br>2. Выдели таблицу мышкой (Ctrl+A) и скопируй (Ctrl+C).<br>3. Вставь сюда и нажми «ЗАГРУЗИТЬ». Список сохранится в браузере.</div>
-    <textarea id="impdata" placeholder="Вставь список гостей сюда…"></textarea>
-    <div class="imp-actions">
-      <button class="btn" id="impload">ЗАГРУЗИТЬ</button>
-      <button class="btn ghost" id="impclear">ОЧИСТИТЬ СПИСОК</button>
-      <button class="btn ghost" id="impclose">ЗАКРЫТЬ</button>
+    <div class="tools">
+      <input id="search" placeholder="Поиск: имя, телефон, № билета..." oninput="render()">
+      <button id="scanbtn" onclick="startScan()">📷 Скан</button>
     </div>
-    <div id="impstat"></div>
+
+    <div id="video-box">
+      <video id="video" playsinline muted></video>
+      <button id="scan-cancel" onclick="stopScan()">✕</button>
+    </div>
+    <div class="scan-msg" id="scan-msg"></div>
+
+    <div class="glist" id="glist"></div>
   </div>
+
 </div>
 
-<div id="scan">
-  <video id="video" playsinline muted></video>
-  <div class="hint">Наведи камеру на QR-код билета гостя</div>
-  <div id="scanres"></div>
-  <div id="rescard"></div>
-  <button class="btn ghost" id="closescan" style="margin-top:16px">ЗАКРЫТЬ СКАНЕР</button>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
-/* НАСТРОЙКА: ACCESS_CODE — код входа для сотрудников.
-   Список гостей импортируется вручную: кнопка «ИМПОРТ СПИСКА» →
-   вставка таблицы ответов из Google Формы (вкладка «Ответы»). */
-const ACCESS_CODE = "QNOCH-2674";
+var FB = 'https://bignight-7b863-default-rtdb.firebaseio.com';
+var CODE = 'QNOCH-2674';
+var CAP = 150;
+var guests = {};
+var timer = null;
 
-const $ = id => document.getElementById(id);
-const digits = s => (s||'').replace(/\D/g,'').slice(-10);
-let ROWS = [], PASSED = {}, WALKINS = 0;
+function tryLogin() {
+  var v = document.getElementById('code').value.trim();
+  if (v === CODE) {
+    localStorage.setItem('bignight_admin', '1');
+    openPanel();
+  } else {
+    document.getElementById('lerr').textContent = 'Неверный код. Попробуй ещё раз.';
+  }
+}
 
-try{ PASSED = JSON.parse(localStorage.getItem('q_passed')||'{}'); }catch(e){ PASSED = {}; }
-try{ ROWS = JSON.parse(localStorage.getItem('q_rows')||'[]'); }catch(e){ ROWS = []; }
-try{ WALKINS = parseInt(localStorage.getItem('q_walkins')||'0',10)||0; }catch(e){ WALKINS = 0; }
+function logout() {
+  localStorage.removeItem('bignight_admin');
+  location.reload();
+}
 
-$('enter').onclick = ()=>{
-  if($('code').value.trim() === ACCESS_CODE){
-    $('login').style.display='none'; $('panel').style.display='block'; $('hactions').style.display='flex';
-    try{ localStorage.setItem('q_code', ACCESS_CODE); }catch(e){}
-    render();
-  } else { $('err').textContent = 'Неверный код. Попроси у организаторов.'; }
-};
-$('code').addEventListener('keydown', e=>{ if(e.key==='Enter') $('enter').click(); });
-try{ if(localStorage.getItem('q_code')===ACCESS_CODE) $('enter').click(); }catch(e){}
+function openPanel() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('panel').style.display = 'block';
+  refresh();
+  timer = setInterval(refresh, 4000);
+}
 
-$('importbtn').onclick = ()=>{ $('imp').classList.add('show'); $('impstat').textContent=''; };
-$('impclose').onclick = ()=>{ $('imp').classList.remove('show'); render(); };
-$('impclear').onclick = ()=>{
-  ROWS = []; PASSED = {}; WALKINS = 0;
-  try{ localStorage.removeItem('q_rows'); localStorage.removeItem('q_passed'); localStorage.removeItem('q_walkins'); }catch(e){}
-  $('impdata').value=''; $('impstat').textContent = 'Список очищен.'; render();
-};
-$('impload').onclick = ()=>{
-  const parsed = parseImport($('impdata').value);
-  if(!parsed.length){
-    $('impstat').textContent = 'Не нашёл ни одного гостя. Проверь, что скопировал таблицу ответов целиком.';
+// --- данные из базы
+function refresh() {
+  fetch(FB + '/guests.json')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ guests = d || {}; render(); })
+    .catch(function(){});
+}
+
+function render() {
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  var reg = 0, ent = 0;
+  var list = [];
+  Object.keys(guests).forEach(function(k){
+    var g = guests[k];
+    if (!g || !g.num) return;
+    reg++;
+    if (g.entered) ent++;
+    list.push(g);
+  });
+  list.sort(function(a,b){ return a.num - b.num; });
+
+  document.getElementById('s_reg').textContent = reg;
+  document.getElementById('s_in').textContent = ent;
+  document.getElementById('s_left').textContent = Math.max(0, CAP - ent);
+
+  var box = document.getElementById('glist');
+  var shown = 0;
+  var html = '';
+  list.forEach(function(g){
+    var hay = ((g.fio||'') + ' ' + (g.phone||'') + ' ' + g.num + ' ' + (g.study||'')).toLowerCase();
+    if (q && hay.indexOf(q) === -1) return;
+    shown++;
+    html += '<div class="guest' + (g.entered ? ' entered' : '') + '">'
+      + '<div class="num">№' + g.num + '</div>'
+      + '<div class="who"><div class="n">' + esc(g.fio) + '</div>'
+      + '<div class="d">' + esc(g.study) + ' • ' + esc(g.phone) + '</div></div>'
+      + (g.entered ? '<span class="done">✓</span>' : '<button class="go" onclick="admit(\'' + g.phone + '\')">ПУСК ✓</button>')
+      + '</div>';
+  });
+  box.innerHTML = html || '<div class="empty">' + (q ? 'Никого не найдено' : 'Пока никто не зарегистрировался') + '</div>';
+}
+
+function esc(s) { return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function admit(phone) {
+  var key = null;
+  Object.keys(guests).forEach(function(k){ if (guests[k] && guests[k].phone === phone) key = k; });
+  if (!key) return;
+  fetch(FB + '/guests/' + key + '.json', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ entered: true })
+  }).then(refresh);
+}
+
+// --- сканер QR
+var stream = null, raf = null;
+function startScan() {
+  var box = document.getElementById('video-box');
+  var msg = document.getElementById('scan-msg');
+  box.style.display = 'block';
+  msg.textContent = 'Наведи камеру на QR билета...';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    msg.textContent = 'Камера недоступна в этом браузере. Ищи гостя вручную по поиску.';
     return;
   }
-  ROWS = parsed;
-  try{ localStorage.setItem('q_rows', JSON.stringify(ROWS)); }catch(e){}
-  $('impstat').textContent = 'Загружено гостей: ' + ROWS.length + '. Можно закрыть окно.';
-};
-
-function parseImport(text){
-  const out = [], seen = {};
-  text.replace(/\r/g,'').split('\n').forEach(line=>{
-    if(!line.trim()) return;
-    let cells = line.includes('\t') ? line.split('\t') : line.split(',');
-    cells = cells.map(c=>c.replace(/^"+|"+$/g,'').trim());
-    const joined = cells.join(' ').toLowerCase();
-    const hasPhone = cells.some(c=>{const d=digits(c); return d.length>=10;});
-    if(/отметка времени|timestamp/.test(joined) && !hasPhone) return; /* строка заголовков */
-    let name='', study='', phone='';
-    if(cells.length >= 5){
-      const d = digits(cells[3]);
-      if(d.length>=10){ phone = d; name = cells[1]; study = cells[2]; }
-    }
-    if(!phone){
-      const pc = cells.map(c=>({c, d:digits(c)})).find(x=>x.d.length>=10);
-      if(!pc) return;
-      phone = pc.d;
-      const others = cells.filter(c=>c!==pc.c && c && !/^\d{1,2}\.\d{1,2}\.\d{2,4}/.test(c));
-      name = others[0]||''; study = others[1]||'';
-    }
-    if(!phone) return;
-    phone = phone.slice(-10);
-    if(seen[phone]) return;
-    seen[phone] = 1;
-    out.push({name, study, phone, num: phone.slice(-4).padStart(4,'0')});
-  });
-  return out;
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(s){
+      stream = s;
+      var v = document.getElementById('video');
+      v.srcObject = s;
+      v.play();
+      tick();
+    })
+    .catch(function(){
+      msg.textContent = 'Нет доступа к камере. Ищи гостя вручную по поиску.';
+    });
 }
 
-function render(){
-  const q = $('search').value.trim().toLowerCase();
-  const body = ROWS.filter(g => !q || g.name.toLowerCase().includes(q) || g.phone.includes(digits(q)) || g.num.includes(q));
-
-  $('st_total').textContent = ROWS.length;
-  $('st_done').textContent = Object.values(PASSED).filter(Boolean).length + WALKINS;
-
-  if(!ROWS.length){ $('list').innerHTML = '<div class="empty">Список пуст. Нажми «ИМПОРТ СПИСКА» и вставь таблицу ответов из формы.</div>'; return; }
-  if(!body.length){ $('list').innerHTML = '<div class="empty">Никого не найдено.</div>'; return; }
-  $('list').innerHTML = '<table><thead><tr><th>№</th><th>ГОСТЬ</th><th>УЧЁБА</th><th>ТЕЛЕФОН</th><th>ВХОД</th></tr></thead><tbody>' +
-    body.map(g=>{
-      const done = !!PASSED[g.phone];
-      return `<tr class="${done?'done':''}" data-num="${g.phone}">
-        <td class="num">№${g.num}</td>
-        <td>${esc(g.name)}</td>
-        <td style="color:var(--gray)">${esc(g.study)}</td>
-        <td style="color:var(--gray)">+7 ${g.phone.slice(0,3)} ${g.phone.slice(3,6)}-${g.phone.slice(6,8)}-${g.phone.slice(8)}</td>
-        <td><button class="pass" onclick="toggle('${g.phone}')">${done?'✓ ПРОШЁЛ':'ОТПУСТИТЬ'}</button></td>
-      </tr>`;
-    }).join('') + '</tbody></table>';
-}
-function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-window.toggle = phone=>{
-  PASSED[phone] = !PASSED[phone];
-  try{ localStorage.setItem('q_passed', JSON.stringify(PASSED)); }catch(e){}
-  render();
-};
-$('search').addEventListener('input', render);
-
-/* СКАНЕР QR */
-let stream=null, rafId=null;
-$('scanbtn').onclick = async ()=>{
-  $('scan').classList.add('show');
-  $('scanres').textContent=''; $('rescard').style.display='none';
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    $('video').srcObject = stream; await $('video').play();
-    tick();
-  }catch(e){ $('scanres').textContent = 'Нет доступа к камере. Разреши доступ или используй поиск по списку.'; }
-};
-function tick(){
-  if(!$('scan').classList.contains('show')) return;
-  const v = $('video');
-  if(v.readyState === v.HAVE_ENOUGH_DATA){
-    const c = document.createElement('canvas');
+function tick() {
+  var v = document.getElementById('video');
+  if (v.readyState === v.HAVE_ENOUGH_DATA) {
+    var c = document.createElement('canvas');
     c.width = v.videoWidth; c.height = v.videoHeight;
-    const ctx = c.getContext('2d');
-    ctx.drawImage(v,0,0);
-    const img = ctx.getImageData(0,0,c.width,c.height);
-    const code = jsQR(img.data, c.width, c.height, {inversionAttempts:'dontInvert'});
-    if(code && code.data) return onScan(code.data);
+    var ctx = c.getContext('2d');
+    ctx.drawImage(v, 0, 0, c.width, c.height);
+    var img = ctx.getImageData(0, 0, c.width, c.height);
+    var res = window.jsQR ? jsQR(img.data, c.width, c.height) : null;
+    if (res && res.data) {
+      var parts = res.data.split('|');
+      if (parts[0] === 'BIGNIGHT') {
+        stopScan();
+        var phone = parts[2] || '';
+        var found = false;
+        Object.keys(guests).forEach(function(k){
+          if (guests[k] && guests[k].phone === phone) {
+            found = true;
+            if (!guests[k].entered) {
+              admit(phone);
+              document.getElementById('scan-msg').innerHTML = '<span style="color:#38e07b;font-weight:700;">БИЛЕТ ПРОЙДЕН — ' + esc(guests[k].fio) + ' (№' + guests[k].num + ')</span>';
+            } else {
+              document.getElementById('scan-msg').innerHTML = '<span style="color:#f0ad4e;">Этот билет уже был на входе (№' + guests[k].num + ')</span>';
+            }
+          }
+        });
+        if (!found) document.getElementById('scan-msg').innerHTML = '<span style="color:#ff2d55;">Гость с таким билетом не найден в списке</span>';
+        return;
+      }
+    }
   }
-  rafId = requestAnimationFrame(tick);
+  raf = requestAnimationFrame(tick);
 }
-function onScan(data){
-  stopScan();
-  const parts = data.split('|');
-  const phone = digits(parts[2]||'').slice(-10);
-  const g = phone ? ROWS.find(r=>r.phone===phone) : null;
-  if(g){
-    showCard(g);
-  } else if(phone){
-    $('scanres').textContent = 'Гостя нет в импортированном списке.';
-    $('rescard').style.display='block';
-    $('rescard').innerHTML = `<div class="n">НЕТ В СПИСКЕ</div>
-      <div style="font-size:14px;color:var(--gray);margin:6px 0 2px">Телефон: +7 ${phone.slice(0,3)} ${phone.slice(3,6)}-${phone.slice(6,8)}-${phone.slice(8)}</div>
-      <button class="btn" style="margin-top:14px" onclick="skipWalkin()">ПРОПУСТИТЬ БЕЗ СПИСКА</button>`;
-  } else {
-    $('scanres').textContent = 'QR не распознан. Попробуй ещё раз или найди гостя поиском.';
-  }
+
+function stopScan() {
+  if (raf) cancelAnimationFrame(raf);
+  if (stream) { stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; }
+  document.getElementById('video-box').style.display = 'none';
 }
-function showCard(g){
-  $('rescard').style.display='block';
-  $('rescard').innerHTML = `<div class="n">№${g.num}</div>
-    <div style="font-size:18px;font-weight:800;margin:6px 0 2px">${esc(g.name)}</div>
-    <div style="color:var(--gray);font-size:13px">${esc(g.study)} · +7 ${g.phone.slice(0,3)} ${g.phone.slice(3,6)}-${g.phone.slice(6,8)}-${g.phone.slice(8)}</div>
-    <button class="btn" style="margin-top:16px" onclick="markAndClose('${g.phone}')">ПРОПУСТИТЬ ✓</button>`;
-}
-window.markAndClose = phone=>{ PASSED[phone]=true; try{localStorage.setItem('q_passed',JSON.stringify(PASSED));}catch(e){} render(); stopScan(); };
-window.skipWalkin = ()=>{
-  WALKINS++;
-  try{ localStorage.setItem('q_walkins', String(WALKINS)); }catch(e){}
-  render(); stopScan();
-};
-function stopScan(){
-  if(rafId) cancelAnimationFrame(rafId);
-  if(stream) stream.getTracks().forEach(t=>t.stop());
-  stream=null; $('scan').classList.remove('show');
-}
-$('closescan').onclick = stopScan;
+
+// --- автологин
+if (localStorage.getItem('bignight_admin') === '1') openPanel();
 </script>
 </body>
 </html>
